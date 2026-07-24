@@ -1,0 +1,23 @@
+#!/bin/bash
+# Omarchy theme-set hook: adapt Midnight Glass to the active wallpaper.
+# Installed by ./install-integration.sh into ~/.config/omarchy/hooks/theme-set.d/
+
+set -euo pipefail
+
+THEME="${1,,}"
+THEME_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/omarchy/themes/midnight-glass"
+
+if [[ $THEME != "midnight-glass" ]]; then
+  "$THEME_DIR/manage-waybar-config.sh" deactivate >/dev/null 2>&1 || true
+  "$THEME_DIR/manage-qt-theme.sh" deactivate >/dev/null 2>&1 || true
+  exit 0
+fi
+
+[[ ${MIDNIGHT_GLASS_ADAPTING:-} == 1 ]] && exit 0
+
+export MIDNIGHT_GLASS_ADAPTING=1
+"$THEME_DIR/adapt-from-wallpaper.sh"
+"$THEME_DIR/sync-theme-assets.sh"
+"$THEME_DIR/sync-waybar-layout.sh" >/dev/null
+"$THEME_DIR/apply-qt-theme.sh" >/dev/null 2>&1 || true
+unset MIDNIGHT_GLASS_ADAPTING

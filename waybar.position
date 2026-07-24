@@ -1,0 +1,14 @@
+# Waybar screen edge — change the value below, then run:
+#   ./set-waybar-position.sh
+# Or in one step:
+#   ./set-waybar-position.sh <direction>
+#
+# Directions:
+#   top     — bar along the top edge (horizontal islands)
+#   bottom  — bar along the bottom edge (horizontal islands)
+#   left    — stacked glass islands on the left edge
+#   right   — stacked glass islands on the right edge
+#
+# Only the first bare word below is read (lines starting with # are ignored).
+
+left

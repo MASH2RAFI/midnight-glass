@@ -1,0 +1,52 @@
+# Midnight Glass — colors + background-only transparency (text stays opaque)
+
+[window]
+opacity = 0.40
+
+[colors.primary]
+background = "#060707"
+foreground = "#A3BDBD"
+
+[colors.cursor]
+text = "#060707"
+cursor = "#A3BDBD"
+
+[colors.vi_mode_cursor]
+text = "#060707"
+cursor = "#A3BDBD"
+
+[colors.search.matches]
+foreground = "#060707"
+background = "#537272"
+
+[colors.search.focused_match]
+foreground = "#060707"
+background = "#7B6764"
+
+[colors.footer_bar]
+foreground = "#060707"
+background = "#A3BDBD"
+
+[colors.selection]
+text = "#A3BDBD"
+background = "#212B2B"
+
+[colors.normal]
+black = "#060707"
+red = "#7B6764"
+green = "#699696"
+yellow = "#537272"
+blue = "#5F8282"
+magenta = "#7B6764"
+cyan = "#537272"
+white = "#A3BDBD"
+
+[colors.bright]
+black = "#212B2B"
+red = "#7B6764"
+green = "#699696"
+yellow = "#537272"
+blue = "#5F8282"
+magenta = "#7B6764"
+cyan = "#A3BDBD"
+white = "#FFFFFF"

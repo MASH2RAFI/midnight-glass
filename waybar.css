@@ -1,0 +1,334 @@
+/* ===== Midnight Glass waybar — separated glass islands =====================
+   Omarchy-compatible: layers on stock ~/.config/waybar/style.css.
+   Keep @define-color foreground/background (required by Omarchy themes).
+   Accents track colors.toml / adapt-from-wallpaper.sh.
+   Position switch: edit waybar.position or run ./set-waybar-position.sh <edge>
+   CSS classes window#waybar.top|bottom|left|right follow the config position. */
+
+@define-color foreground #A3BDBD;
+@define-color background #060707;
+@define-color accent #5F8282;
+
+/* Full layer clear — only the three islands draw glass */
+window#waybar {
+  background-color: transparent;
+  border: none;
+}
+
+window#waybar * {
+  background-color: transparent;
+  border: none;
+}
+
+/* --- Horizontal (top / bottom): row of islands --- */
+
+window#waybar.top > box,
+window#waybar.bottom > box {
+  margin: 5px 8px 3px 8px;
+  background-color: transparent;
+}
+
+window#waybar.top .modules-left,
+window#waybar.top .modules-center,
+window#waybar.top .modules-right,
+window#waybar.bottom .modules-left,
+window#waybar.bottom .modules-center,
+window#waybar.bottom .modules-right,
+window#waybar.top > box > box.modules-left,
+window#waybar.top > box > box.modules-center,
+window#waybar.top > box > box.modules-right,
+window#waybar.bottom > box > box.modules-left,
+window#waybar.bottom > box > box.modules-center,
+window#waybar.bottom > box > box.modules-right {
+  background-color: alpha(@background, 0.84);
+  border: 1px solid alpha(@accent, 0.34);
+  border-radius: 16px;
+  padding: 2px 10px;
+  margin: 0 8px;
+  box-shadow: none;
+}
+
+window#waybar.top .modules-left,
+window#waybar.bottom .modules-left {
+  margin-left: 4px;
+}
+
+window#waybar.top .modules-right,
+window#waybar.bottom .modules-right {
+  margin-right: 4px;
+}
+
+window#waybar.top .modules-center,
+window#waybar.bottom .modules-center {
+  padding: 2px 14px;
+}
+
+/* --- Vertical (left / right): stacked islands over wallpaper --- */
+
+window#waybar.left,
+window#waybar.right {
+  background-color: transparent;
+}
+
+window#waybar.left > box,
+window#waybar.right > box {
+  /* Flush to the window edge — no side gutter beside the rail */
+  margin: 8px 0;
+  padding: 0;
+  background-color: transparent;
+  border: none;
+  box-shadow: none;
+}
+
+window#waybar.left .modules-left,
+window#waybar.left .modules-center,
+window#waybar.left .modules-right,
+window#waybar.right .modules-left,
+window#waybar.right .modules-center,
+window#waybar.right .modules-right,
+window#waybar.left > box > box.modules-left,
+window#waybar.left > box > box.modules-center,
+window#waybar.left > box > box.modules-right,
+window#waybar.right > box > box.modules-left,
+window#waybar.right > box > box.modules-center,
+window#waybar.right > box > box.modules-right {
+  background-color: alpha(@background, 0.84);
+  border: 1px solid alpha(@accent, 0.34);
+  border-radius: 16px;
+  padding: 6px 2px;
+  /* Gaps between islands — wallpaper shows through */
+  margin: 10px 0;
+  box-shadow: none;
+}
+
+window#waybar.left .modules-left,
+window#waybar.right .modules-left {
+  margin-top: 4px;
+}
+
+window#waybar.left .modules-right,
+window#waybar.right .modules-right {
+  margin-bottom: 4px;
+}
+
+window#waybar.left .modules-center,
+window#waybar.right .modules-center {
+  padding: 10px 2px;
+}
+
+/* Center widgets in each island */
+window#waybar.left #workspaces,
+window#waybar.right #workspaces,
+window#waybar.left #custom-omarchy,
+window#waybar.right #custom-omarchy,
+window#waybar.left #clock,
+window#waybar.right #clock,
+window#waybar.left #battery,
+window#waybar.right #battery,
+window#waybar.left #cpu,
+window#waybar.right #cpu,
+window#waybar.left #memory,
+window#waybar.right #memory,
+window#waybar.left #pulseaudio,
+window#waybar.right #pulseaudio,
+window#waybar.left #network,
+window#waybar.right #network,
+window#waybar.left #bluetooth,
+window#waybar.right #bluetooth,
+window#waybar.left #tray,
+window#waybar.right #tray,
+window#waybar.left #custom-expand-icon,
+window#waybar.right #custom-expand-icon {
+  margin-left: 0;
+  margin-right: 0;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+window#waybar.left .modules-left #workspaces,
+window#waybar.right .modules-left #workspaces {
+  padding: 0;
+}
+
+window#waybar.left .modules-left #workspaces button,
+window#waybar.right .modules-left #workspaces button {
+  min-width: 14px;
+  min-height: 14px;
+  padding: 0;
+  margin: 0;
+  border-radius: 5px;
+  font-family: 'JetBrainsMono Nerd Font';
+  font-size: 10px;
+  font-weight: 600;
+  color: alpha(@foreground, 0.6);
+}
+
+window#waybar.left .modules-left #workspaces button.empty,
+window#waybar.right .modules-left #workspaces button.empty {
+  color: alpha(@foreground, 0.3);
+}
+
+window#waybar.left .modules-left #workspaces button.active,
+window#waybar.right .modules-left #workspaces button.active {
+  padding: 0;
+  margin: 0;
+  background-color: @accent;
+  color: @background;
+}
+
+window#waybar.left .modules-left #workspaces button:hover,
+window#waybar.right .modules-left #workspaces button:hover {
+  background-color: alpha(@accent, 0.28);
+  color: @foreground;
+}
+
+window#waybar.left #custom-omarchy,
+window#waybar.right #custom-omarchy {
+  padding: 4px 0 6px 0;
+  font-size: 13px;
+}
+
+window#waybar.left #clock,
+window#waybar.right #clock {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  padding: 12px 0;
+  margin: 0;
+  color: @accent;
+}
+
+window#waybar.left #battery,
+window#waybar.right #battery,
+window#waybar.left #cpu,
+window#waybar.right #cpu,
+window#waybar.left #memory,
+window#waybar.right #memory {
+  margin: 2px 1px;
+  padding: 4px 1px;
+  min-width: 28px;
+  font-size: 9px;
+  font-weight: 600;
+  background-color: alpha(@foreground, 0.05);
+  border-radius: 8px;
+}
+
+window#waybar.left #pulseaudio,
+window#waybar.right #pulseaudio,
+window#waybar.left #network,
+window#waybar.right #network,
+window#waybar.left #bluetooth,
+window#waybar.right #bluetooth,
+window#waybar.left #tray,
+window#waybar.right #tray,
+window#waybar.left #custom-expand-icon,
+window#waybar.right #custom-expand-icon {
+  padding: 5px 0;
+  font-size: 12px;
+}
+
+/* --- Workspaces --- */
+
+window#waybar #workspaces {
+  margin: 0;
+  padding: 0;
+}
+
+window#waybar #workspaces button {
+  padding: 0 8px;
+  margin: 2px 1px;
+  min-width: 10px;
+  border-radius: 10px;
+  font-family: 'JetBrainsMono Nerd Font';
+  font-size: 12px;
+  font-weight: 600;
+  color: alpha(@foreground, 0.42);
+}
+
+window#waybar #workspaces button.empty {
+  color: alpha(@foreground, 0.2);
+}
+
+window#waybar #workspaces button.active {
+  padding: 0 11px;
+  background-color: @accent;
+  color: @background;
+  font-weight: 600;
+}
+
+window#waybar #workspaces button:hover {
+  background-color: alpha(@accent, 0.28);
+  color: @foreground;
+}
+
+window#waybar #custom-omarchy {
+  color: @accent;
+  padding: 0 6px;
+}
+
+window#waybar #clock {
+  color: @accent;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  padding: 0 6px;
+}
+
+window#waybar #custom-weather {
+  color: alpha(@foreground, 0.72);
+}
+
+window#waybar #battery {
+  min-width: 0;
+  margin: 0 4px;
+  padding: 0 6px;
+  color: @foreground;
+  font-weight: 500;
+  background-color: alpha(@foreground, 0.05);
+  border-radius: 8px;
+}
+
+window#waybar #cpu,
+window#waybar #memory {
+  margin: 0 3px;
+  padding: 0 6px;
+  font-weight: 500;
+  color: alpha(@foreground, 0.9);
+  background-color: alpha(@foreground, 0.05);
+  border-radius: 8px;
+}
+
+window#waybar #pulseaudio,
+window#waybar #network,
+window#waybar #bluetooth,
+window#waybar #tray,
+window#waybar #custom-expand-icon,
+window#waybar #custom-update {
+  color: alpha(@foreground, 0.88);
+  padding: 0 3px;
+}
+
+/* --- Status --- */
+
+window#waybar #custom-screenrecording-indicator.active,
+window#waybar #custom-idle-indicator.active,
+window#waybar #custom-notification-silencing-indicator.active,
+window#waybar #custom-voxtype.recording {
+  color: #537272;
+}
+
+window#waybar #battery.warning {
+  color: #699696;
+}
+
+window#waybar #battery.critical:not(.charging) {
+  color: #7B6764;
+}
+
+/* --- Tooltip --- */
+
+tooltip {
+  background-color: alpha(@background, 0.95);
+  border: 1px solid alpha(@accent, 0.32);
+  border-radius: 12px;
+  color: @foreground;
+}
