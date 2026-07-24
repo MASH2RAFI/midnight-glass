@@ -1,0 +1,8 @@
+org.gnome.desktop.interface	icon-theme	'Yaru-red'
+org.gnome.nautilus.preferences	default-folder-viewer	'list-view'
+org.gnome.nautilus.preferences	default-sort-order	'name'
+org.gnome.nautilus.preferences	default-sort-in-reverse-order	false
+org.gnome.nautilus.icon-view	default-zoom-level	'medium'
+org.gnome.nautilus.icon-view	captions	['none', 'none', 'none']
+org.gnome.nautilus.list-view	use-tree-view	false
+org.gnome.nautilus.list-view	default-visible-columns	['name', 'size', 'date_modified']

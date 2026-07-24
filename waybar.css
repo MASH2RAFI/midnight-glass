@@ -9,6 +9,25 @@
 @define-color background #060707;
 @define-color accent #5F8282;
 
+/* Smooth palette shifts when waybar.css reloads (SIGUSR2 on wallpaper change) */
+window#waybar .modules-left,
+window#waybar .modules-center,
+window#waybar .modules-right,
+window#waybar.left .modules-left,
+window#waybar.left .modules-center,
+window#waybar.left .modules-right,
+window#waybar.right .modules-left,
+window#waybar.right .modules-center,
+window#waybar.right .modules-right,
+window#waybar label,
+window#waybar button,
+window#waybar .module {
+  transition: background-color 420ms cubic-bezier(0.16, 1, 0.3, 1),
+              color 420ms cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 420ms cubic-bezier(0.16, 1, 0.3, 1),
+              outline-color 420ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
 /* Full layer clear — only the three islands draw glass */
 window#waybar {
   background-color: transparent;

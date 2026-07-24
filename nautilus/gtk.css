@@ -1,0 +1,74 @@
+@define-color mg_bg #060707;
+@define-color mg_fg #A3BDBD;
+@define-color mg_accent #5F8282;
+@define-color mg_panel #212B2B;
+
+/* Midnight Glass — Nautilus (GTK4 / libadwaita) */
+
+.nautilus-window {
+  background-color: alpha(@mg_bg, 0.94);
+  color: @mg_fg;
+  transition: background-color 420ms cubic-bezier(0.16, 1, 0.3, 1), color 420ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.nautilus-window .sidebar,
+.nautilus-window placessidebar {
+  background-color: alpha(@mg_panel, 0.88);
+  transition: background-color 420ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.nautilus-window .sidebar row,
+.nautilus-window placessidebar row {
+  border-radius: 8px;
+  margin: 1px 6px;
+  transition: background-color 420ms cubic-bezier(0.16, 1, 0.3, 1), color 420ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.nautilus-window .sidebar row:selected,
+.nautilus-window placessidebar row:selected {
+  background-color: alpha(@mg_accent, 0.42);
+  color: @mg_fg;
+  transition: background-color 420ms cubic-bezier(0.16, 1, 0.3, 1), color 420ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.nautilus-window headerbar {
+  background-color: alpha(@mg_panel, 0.92);
+  border-bottom: 1px solid alpha(@mg_accent, 0.32);
+  box-shadow: none;
+  transition: background-color 420ms cubic-bezier(0.16, 1, 0.3, 1), border-color 420ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.nautilus-window gridview,
+.nautilus-window .view {
+  background-color: alpha(@mg_bg, 0.72);
+  transition: background-color 420ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.nautilus-window .icon-item label,
+.nautilus-window .icon-item .caption {
+  color: alpha(@mg_fg, 0.92);
+  transition: color 420ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.nautilus-window .toolbar,
+.nautilus-window .primary-toolbar {
+  background-color: alpha(@mg_panel, 0.9);
+  transition: background-color 420ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.nautilus-window .pathbar {
+  background-color: alpha(@mg_panel, 0.55);
+  border-radius: 8px;
+  transition: background-color 420ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.nautilus-window .nautilus-canvas-item:active,
+.nautilus-window .icon-item:active {
+  background-color: alpha(@mg_accent, 0.55);
+}
+
+.nautilus-window .nautilus-canvas-item:selected,
+.nautilus-window .icon-item:selected {
+  background-color: alpha(@mg_accent, 0.38);
+  border-radius: 10px;
+}

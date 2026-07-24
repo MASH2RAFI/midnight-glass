@@ -324,15 +324,14 @@ CURRENT_THEME=""
 [[ -f $CURRENT_THEME_NAME ]] && CURRENT_THEME=$(tr '[:upper:]' '[:lower:]' <"$CURRENT_THEME_NAME")
 
 if [[ $CURRENT_THEME == "midnight-glass" ]]; then
-  "$THEME_DIR/manage-waybar-config.sh" activate
+  ACTIVATE_OUT=$("$THEME_DIR/manage-waybar-config.sh" activate 2>&1) || true
+  printf '%s\n' "$ACTIVATE_OUT"
 
-  if command -v omarchy-restart-waybar >/dev/null; then
-    omarchy-restart-waybar
-  elif command -v omarchy >/dev/null; then
-    omarchy restart waybar
+  # activate restarts waybar when the layout file changed; otherwise reload CSS only.
+  if [[ $ACTIVATE_OUT == *"Applied Midnight Glass waybar layout"* ]]; then
+    :
   else
-    pkill -x waybar 2>/dev/null || true
-    setsid waybar >/dev/null 2>&1 &
+    "$THEME_DIR/refresh-waybar-style.sh" >/dev/null 2>&1 || true
   fi
 fi
 

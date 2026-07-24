@@ -1,6 +1,6 @@
 #!/bin/bash
 # Adapt midnight-glass colors from the current Omarchy wallpaper.
-# Updates colors.toml, waybar.css tokens, hyprland borders, and terminal glass configs.
+# Updates colors.toml, waybar.css, nautilus/gtk.css, unlock assets, hyprland borders, and terminal glass configs.
 # Omarchy-compatible: glass rules stay intact; only color tokens are rewritten.
 #
 # Usage:
@@ -140,6 +140,44 @@ bg_h, fg_h, ac_h, sel_h = to_hex(bg_rgb), to_hex(fg_rgb), to_hex(ac_rgb), to_hex
 warn, crit, mid = to_hex(warn_rgb), to_hex(crit_rgb), to_hex(mid_rgb)
 ac_s, mid_s, sel_s = ac_h[1:], mid[1:], sel_h[1:]
 
+ICON_BY_HUE = [
+  (0, 18, "Yaru-red-dark"),
+  (18, 35, "Yaru-wartybrown-dark"),
+  (35, 52, "Yaru-yellow-dark"),
+  (52, 78, "Yaru-olive-dark"),
+  (78, 95, "Yaru-sage-dark"),
+  (95, 140, "Yaru-prussiangreen-dark"),
+  (140, 205, "Yaru-blue-dark"),
+  (205, 265, "Yaru-purple-dark"),
+  (265, 310, "Yaru-magenta-dark"),
+  (310, 360, "Yaru-red-dark"),
+]
+
+def icon_theme_exists(name):
+  home = Path.home()
+  for base in (Path("/usr/share/icons"), home / ".local/share/icons", home / ".icons"):
+    if (base / name).is_dir():
+      return True
+  return False
+
+def icon_theme_for_hue(hue_deg):
+  for lo, hi, name in ICON_BY_HUE:
+    if lo <= hue_deg < hi:
+      return name
+  return "Yaru-prussiangreen-dark"
+
+if chromatic and acc_cands:
+  icon_theme = icon_theme_for_hue(accent_src[3] * 360.0)
+else:
+  icon_theme = "Yaru-dark"
+
+for fallback in (icon_theme, "Yaru-prussiangreen-dark", "Yaru-dark"):
+  if icon_theme_exists(fallback):
+    icon_theme = fallback
+    break
+
+(theme / "icons.theme").write_text(icon_theme + "\n")
+
 (theme / "colors.toml").write_text(f"""# Palette adapted from the active wallpaper (see adapt-from-wallpaper.sh)
 accent = "{ac_h}"
 cursor = "{fg_h}"
@@ -186,6 +224,15 @@ if waybar.exists():
     count=1,
   )
   waybar.write_text(css)
+
+nautilus_css = theme / "nautilus" / "gtk.css"
+if nautilus_css.exists():
+  css = nautilus_css.read_text()
+  css = re.sub(r"(@define-color mg_bg )#[0-9A-Fa-f]{6};", rf"\g<1>{bg_h};", css, count=1)
+  css = re.sub(r"(@define-color mg_fg )#[0-9A-Fa-f]{6};", rf"\g<1>{fg_h};", css, count=1)
+  css = re.sub(r"(@define-color mg_accent )#[0-9A-Fa-f]{6};", rf"\g<1>{ac_h};", css, count=1)
+  css = re.sub(r"(@define-color mg_panel )#[0-9A-Fa-f]{6};", rf"\g<1>{sel_h};", css, count=1)
+  nautilus_css.write_text(css)
 
 hypr = theme / "hyprland.conf"
 if hypr.exists():
@@ -327,7 +374,9 @@ palette = 15=#FFFFFF
 print(f"Adapted midnight-glass from: {wallpaper}")
 print(f"  mode={'chromatic' if chromatic else 'grayscale-fallback'}")
 print(f"  background={bg_h}  foreground={fg_h}  accent={ac_h}  selection={sel_h}")
+print(f"  icons={icon_theme}")
 print('Run: omarchy theme set "Midnight Glass"  (or ./install-integration.sh once)')
 PY
 
+"$THEME_DIR/generate-unlock-assets.sh" || true
 "$THEME_DIR/apply-qt-theme.sh"

@@ -96,6 +96,29 @@ else:
 
 Path(out_kv).write_text(base)
 
+# Dolphin-friendly glass tweaks on the generated Kvantum theme.
+kv = Path(out_kv).read_text()
+fg_plain = fg.lstrip("#")
+kv = re.sub(r"transparent_dolphin_view=false", "transparent_dolphin_view=true", kv, count=1)
+kv = re.sub(r"layout_margin=\d+", "layout_margin=6", kv, count=1)
+kv = re.sub(r"layout_spacing=\d+", "layout_spacing=4", kv, count=1)
+kv = re.sub(r"toolbar_icon_size=\d+", "toolbar_icon_size=22", kv, count=1)
+kv = re.sub(r"small_icon_size=\d+", "small_icon_size=16", kv, count=1)
+kv = re.sub(r"large_icon_size=\d+", "large_icon_size=32", kv, count=1)
+kv = re.sub(
+  r"(\[ItemView\][\s\S]*?text\.normal\.color=)#[0-9A-Fa-f]{6,8}",
+  rf"\g<1>#{fg_plain}c8",
+  kv,
+  count=1,
+)
+kv = re.sub(
+  r"(\[HeaderSection\][\s\S]*?text\.focus\.color=)#[0-9A-Fa-f]{6}",
+  rf"\g<1>{ac}",
+  kv,
+  count=1,
+)
+Path(out_kv).write_text(kv)
+
 def section(name: str, bg_hex: str, fg_hex: str = fg, accent_hex: str = ac) -> str:
   bg_rgb, fg_rgb, accent_rgb = rgb(bg_hex), rgb(fg_hex), rgb(accent_hex)
   h = fg_hex.lstrip("#")

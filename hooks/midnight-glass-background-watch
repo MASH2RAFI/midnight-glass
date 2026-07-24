@@ -17,8 +17,6 @@ while true; do
       export MIDNIGHT_GLASS_ADAPTING=1
       "$THEME_DIR/adapt-from-wallpaper.sh" "$CUR" || true
       "$THEME_DIR/sync-theme-assets.sh" || true
-      "$THEME_DIR/sync-waybar-layout.sh" >/dev/null || true
-      "$THEME_DIR/apply-qt-theme.sh" >/dev/null 2>&1 || true
       unset MIDNIGHT_GLASS_ADAPTING
     fi
   fi

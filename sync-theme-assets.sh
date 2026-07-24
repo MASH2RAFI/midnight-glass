@@ -13,18 +13,20 @@ for file in \
   waybar.css \
   hyprland.conf \
   colors.toml \
+  icons.theme \
   alacritty.toml \
   kitty.conf \
   ghostty.conf \
   set-waybar-position.sh \
   manage-waybar-config.sh \
   manage-qt-theme.sh \
-  apply-qt-theme.sh \
+  manage-nautilus-config.sh \
+  apply-nautilus-theme.sh \
+  apply-dolphin-theme.sh \
   sync-theme-assets.sh \
-  sync-waybar-layout.sh; do
+  sync-waybar-layout.sh \
+  refresh-theme-clients.sh; do
   [[ -f $THEME_DIR/$file ]] && cp "$THEME_DIR/$file" "$CURRENT/$file"
 done
 
-if command -v hyprctl >/dev/null; then
-  hyprctl reload >/dev/null 2>&1 || true
-fi
+"$THEME_DIR/refresh-theme-clients.sh" >/dev/null 2>&1 || true
