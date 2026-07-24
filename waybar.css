@@ -5,9 +5,9 @@
    Position switch: edit waybar.position or run ./set-waybar-position.sh <edge>
    CSS classes window#waybar.top|bottom|left|right follow the config position. */
 
-@define-color foreground #A3BDBD;
-@define-color background #060707;
-@define-color accent #5F8282;
+@define-color foreground #B8B7BC;
+@define-color background #040405;
+@define-color accent #93737A;
 
 /* Smooth palette shifts when waybar.css reloads (SIGUSR2 on wallpaper change) */
 window#waybar .modules-left,
@@ -332,15 +332,15 @@ window#waybar #custom-screenrecording-indicator.active,
 window#waybar #custom-idle-indicator.active,
 window#waybar #custom-notification-silencing-indicator.active,
 window#waybar #custom-voxtype.recording {
-  color: #537272;
+  color: #8E625D;
 }
 
 window#waybar #battery.warning {
-  color: #699696;
+  color: #A28876;
 }
 
 window#waybar #battery.critical:not(.charging) {
-  color: #7B6764;
+  color: #856462;
 }
 
 /* --- Tooltip --- */

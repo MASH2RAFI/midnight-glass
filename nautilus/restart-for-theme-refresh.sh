@@ -1,20 +1,19 @@
 #!/bin/bash
-# Smooth Nautilus restart: Hyprland windowsOut/windowsIn, then relaunch.
-# Timing matches matteOut curves in hyprland.conf (windowsOut ~0.55s, windowsIn ~0.65s).
+# Smooth Nautilus restart using Hyprland window animations.
 
 set -euo pipefail
 
-NAUTILUS_CLASS="org.gnome.Nautilus"
-CLOSE_WAIT=${MIDNIGHT_GLASS_NAUTILUS_CLOSE_SEC:-0.65}
-OPEN_WAIT=${MIDNIGHT_GLASS_NAUTILUS_OPEN_SEC:-0.05}
+MG_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# shellcheck source=lib/common.sh
+source "$MG_ROOT/lib/common.sh"
 
-if ! pgrep -x nautilus >/dev/null 2>&1; then
-  exit 0
-fi
+CLOSE_WAIT=${MIDNIGHT_GLASS_NAUTILUS_CLOSE_SEC:-0.65}
+
+pgrep -x nautilus >/dev/null 2>&1 || exit 0
 
 if command -v hyprctl >/dev/null && command -v jq >/dev/null \
-  && hyprctl clients -j | jq -e --arg c "$NAUTILUS_CLASS" '.[] | select(.class==$c)' >/dev/null 2>&1; then
-  hyprctl dispatch killwindow "class:$NAUTILUS_CLASS" 2>/dev/null || true
+  && hyprctl clients -j | jq -e --arg c "$MG_NAUTILUS_CLASS" '.[] | select(.class==$c)' >/dev/null 2>&1; then
+  hyprctl dispatch killwindow "class:$MG_NAUTILUS_CLASS" 2>/dev/null || true
   sleep "$CLOSE_WAIT"
 else
   nautilus --quit 2>/dev/null || true
@@ -22,15 +21,11 @@ fi
 
 pkill -x nautilus 2>/dev/null || true
 
-for _ in $(seq 1 40); do
+for _ in $(seq 1 20); do
   pgrep -x nautilus >/dev/null || break
   sleep 0.05
 done
 
-if pgrep -x nautilus >/dev/null; then
-  pkill -9 -x nautilus 2>/dev/null || true
-  sleep 0.1
-fi
+pgrep -x nautilus >/dev/null && pkill -9 -x nautilus 2>/dev/null || true
 
 uwsm-app -- nautilus >/dev/null 2>&1 &
-sleep "$OPEN_WAIT"

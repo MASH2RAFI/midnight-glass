@@ -1,40 +1,38 @@
 #!/bin/bash
-# Build unlock.png (Plymouth/SDDM logo) and preview-unlock.png (Walker menu preview)
-# from unlock-source.png and the wallpaper-adapted colors.toml palette.
+# Build unlock.png and preview-unlock.png from unlock-source.png + colors.toml.
 
 set -euo pipefail
 
-THEME_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+MG_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=lib/common.sh
+source "$MG_ROOT/lib/common.sh"
+
 SOURCE="$THEME_DIR/unlock-source.png"
 LOGO="$THEME_DIR/unlock.png"
 PREVIEW="$THEME_DIR/preview-unlock.png"
 COLORS="$THEME_DIR/colors.toml"
-OMARCHY_PATH="${OMARCHY_PATH:-$HOME/.local/share/omarchy}"
-PLYMOUTH="$OMARCHY_PATH/default/plymouth"
+PLYMOUTH="$MG_OMARCHY_PATH/default/plymouth"
 
-if [[ ! -f $SOURCE && -f $LOGO ]]; then
-  cp "$LOGO" "$SOURCE"
-fi
-
+[[ ! -f $SOURCE && -f $LOGO ]] && cp "$LOGO" "$SOURCE"
 [[ -f $SOURCE && -f $COLORS && -d $PLYMOUTH ]] || exit 0
 
-MAGICK_BIN=$(command -v magick || command -v convert || true)
+MAGICK_BIN=$(mg_magick_bin)
 [[ -n $MAGICK_BIN ]] || exit 0
 
-read_color() {
-  awk -F'"' -v key="$1" '$1 ~ "^" key " " { print $2; exit }' "$COLORS"
-}
-
-BG=$(read_color background)
-FG=$(read_color foreground)
-ACCENT=$(read_color accent)
-
+BG=$(mg_read_color background "$COLORS")
+FG=$(mg_read_color foreground "$COLORS")
+ACCENT=$(mg_read_color accent "$COLORS")
 [[ -n $BG && -n $FG && -n $ACCENT ]] || exit 0
+
+UNLOCK_HASH="$THEME_DIR/.unlock-assets-hash"
+HASH="${BG}|${FG}|${ACCENT}"
+if [[ -f $UNLOCK_HASH ]] && [[ $HASH == "$(tr -d '[:space:]' <"$UNLOCK_HASH")" ]]; then
+  exit 0
+fi
 
 TMP=$(mktemp -d)
 trap 'rm -rf "$TMP"' EXIT
 
-# Recolor the master logo to the adaptive accent; drop the baked-in black backdrop.
 "$MAGICK_BIN" "$SOURCE" -alpha on -fuzz 22% -transparent black \
   -channel RGB +level-colors "$ACCENT","$ACCENT" \
   "$LOGO"
@@ -82,4 +80,5 @@ PROG_BOX_Y=$(( ENTRY_Y + ENTRY_H / 2 - PROG_BOX_H / 2 ))
   "$TMP/entry.png" -geometry +${ENTRY_X}+${ENTRY_Y} -composite \
   "$PREVIEW"
 
+printf '%s\n' "$HASH" >"$UNLOCK_HASH"
 echo "Generated unlock assets: accent=$ACCENT"

@@ -1,15 +1,17 @@
 #!/bin/bash
 # Omarchy post-boot hook: ensure Midnight Glass waybar layout after login.
-# Installed by ./install-integration.sh into ~/.config/omarchy/hooks/post-boot.d/
 
 set -euo pipefail
 
-THEME_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/omarchy/themes/midnight-glass"
-THEME_NAME_FILE="${XDG_CONFIG_HOME:-$HOME/.config}/omarchy/current/theme.name"
+MG_ROOT="${MG_THEME_ROOT:-${XDG_CONFIG_HOME:-$HOME/.config}/omarchy/themes/midnight-glass}"
+# shellcheck source=lib/common.sh
+source "$MG_ROOT/lib/common.sh"
 
-[[ -f $THEME_NAME_FILE ]] || exit 0
-[[ $(tr '[:upper:]' '[:lower:]' <"$THEME_NAME_FILE") == "midnight-glass" ]] || exit 0
+mg_is_active || exit 0
 
-# Hyprland autostart may launch waybar before hooks run.
-sleep 1
+for _ in 1 2 3 4 5; do
+  pgrep -x waybar >/dev/null 2>&1 && break
+  sleep 0.2
+done
+pgrep -x waybar >/dev/null 2>&1 || exit 0
 "$THEME_DIR/sync-waybar-layout.sh" >/dev/null 2>&1 || true

@@ -1,3 +1,3 @@
 #!/bin/bash
-# Deprecated wrapper — Omarchy uses Nautilus, not Dolphin.
+# Deprecated compatibility shim.
 exec "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/apply-nautilus-theme.sh"

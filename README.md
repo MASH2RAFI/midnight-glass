@@ -1,292 +1,176 @@
 # Midnight Glass
 
-A **wallpaper-adaptive Omarchy theme** with frosted-glass Hyprland decoration, separated Waybar islands, and coordinated colors across terminals, editors, and Qt apps.
+Wallpaper-adaptive Omarchy theme with frosted-glass Hyprland decoration, separated Waybar islands, and coordinated colors across terminals, Nautilus, and Qt apps.
 
-Midnight Glass extracts a palette from your active wallpaper and propagates it through Hyprland borders, Waybar, terminal configs, and Dolphin/Kvantum — without running a full `omarchy theme refresh` or clobbering your personal configs.
-
----
-
-## Features
-
-- **Wallpaper-driven colors** — palette is extracted from the current Omarchy background and written to `colors.toml`, `waybar.css`, Hyprland borders, and terminal themes
-- **Glass Hyprland look** — rounded corners, blur, subtle dimming, and layered opacity rules tuned for readable text
-- **Separated Waybar islands** — three frosted modules (left / center / right) with workspace numbers and battery percentage
-- **Flexible bar position** — top, bottom, left, or right via `waybar.position` or a single command
-- **Reversible swaps** — your original Waybar layout and Qt/Kvantum settings are backed up once and restored when you leave the theme
-- **Live wallpaper sync** — a lightweight user service re-adapts colors when you cycle backgrounds
-- **Bundled wallpapers** — 17 curated backgrounds included under `backgrounds/`
-- **Broad app coverage** — Alacritty, Kitty, Ghostty, btop, Neovim (LazyVim), VS Code/Cursor, and Qt apps via Kvantum
+All automation is **non-destructive**: your original Waybar layout and app settings are backed up inside this theme folder and restored when you switch away.
 
 ---
 
-## Requirements
-
-| Dependency | Used for |
-|---|---|
-| [Omarchy](https://github.com/basecamp/omarchy) | Theme system, Waybar integration, hooks |
-| Hyprland | Window decoration and blur |
-| ImageMagick (`magick` or `convert`) | Wallpaper palette extraction |
-| Python 3 | Color math and config generation |
-| Kvantum (`kvantum-qt5`) | Dolphin and Qt app theming |
-| systemd (user session) | Background wallpaper watcher service |
-
----
-
-## Installation
-
-### 1. Clone the theme
-
-```bash
-git clone https://github.com/MASH2RAFI/midnight-glass.git \
-  ~/.config/omarchy/themes/midnight-glass
-```
-
-Or copy this folder to `~/.config/omarchy/themes/midnight-glass/`.
-
-### 2. Install backgrounds (optional)
-
-Backgrounds ship inside the theme folder. Omarchy can also use them from the shared backgrounds path:
-
-```bash
-mkdir -p ~/.config/omarchy/backgrounds
-cp -r ~/.config/omarchy/themes/midnight-glass/backgrounds \
-  ~/.config/omarchy/backgrounds/midnight-glass
-```
-
-### 3. Run the integration installer
-
-This registers Omarchy hooks and the wallpaper watcher service:
+## Quick start
 
 ```bash
 cd ~/.config/omarchy/themes/midnight-glass
 ./install-integration.sh
-```
-
-### 4. Activate the theme
-
-```bash
 omarchy theme set "Midnight Glass"
 ```
 
 ---
 
-## Usage
+## Architecture
 
-### Switch wallpapers
+```
+hooks/                          Omarchy integration entry points
+├── midnight-glass-adapt        theme-set: adapt + activate swaps
+├── midnight-glass-waybar-boot  post-boot: ensure waybar layout
+└── on-wallpaper-change.sh       One-shot adapt handler (systemd triggered)
 
-Use Omarchy’s normal wallpaper controls. When Midnight Glass is active, colors update automatically via the background watcher.
+lib/common.sh                   Shared helpers (paths, refresh, session)
 
-To adapt manually from a specific image:
+scripts/                        Python logic
+├── adapt_palette.py            Wallpaper → colors.toml + token rewrites
+├── build_qt_theme.py             colors.toml → Kvantum/KDE files
+└── nautilus_gsettings.py       Nautilus gsettings backup/apply/restore
 
-```bash
-./adapt-from-wallpaper.sh /path/to/wallpaper.jpg
-./sync-theme-assets.sh
+User-facing commands
+├── adapt-from-wallpaper.sh     Extract palette + regenerate themed files
+├── sync-theme-assets.sh        Copy to omarchy/current/theme + refresh clients
+├── refresh-theme-clients.sh    Staged smooth reload (waybar → terminals → Qt → hypr → nautilus)
+├── install-integration.sh      Install hooks + systemd watcher
+├── set-waybar-position.sh      Generate + apply waybar layout
+├── manage-{waybar,qt,nautilus}-config.sh   Reversible config swaps
+├── apply-{nautilus,qt}-theme.sh           Activate themed app configs
+├── build-qt-theme.sh           Generate Qt/Kvantum files only
+└── generate-unlock-assets.sh   Plymouth unlock menu previews
 ```
 
-### Change Waybar position
+### Wallpaper change flow
+
+Omarchy updates `~/.config/omarchy/current/background` when you cycle wallpapers. A **systemd path unit** watches `~/.config/omarchy/current/` (the symlink target change does not reliably trigger inotify on the link itself) and runs `on-wallpaper-change.sh` once per change:
+
+1. `midnight-glass-wallpaper.path` — fires on symlink change  
+2. `on-wallpaper-change.sh` — `adapt-from-wallpaper.sh` + `sync-theme-assets.sh`  
+3. `refresh-theme-clients.sh` — staged smooth reload of open apps  
+
+The path unit is **enabled only while Midnight Glass is active** (started/stopped by the theme-set hook).
 
 ```bash
-# One-shot
-./set-waybar-position.sh right
-
-# Or edit waybar.position, then apply
-./set-waybar-position.sh
+systemctl --user status midnight-glass-wallpaper.path
+journalctl --user -u midnight-glass-wallpaper.service -f
 ```
 
-Supported edges: `top`, `bottom`, `left`, `right`.
+Tune staging: `MIDNIGHT_GLASS_STAGE_SEC=0.15` (skipped automatically during wallpaper adapts).
 
-### Apply Qt / Dolphin colors
+### Resource efficiency
 
-Usually handled automatically. To rebuild and activate manually:
+The theme avoids redundant work at each layer:
 
-```bash
-./apply-qt-theme.sh
-./apply-nautilus-theme.sh
-```
+| Layer | Optimization |
+|-------|----------------|
+| **Watcher** | systemd path unit (event-driven, no poll loop) |
+| **Adapt** | `.palette-hash` skips file writes, Qt build, and unlock ImageMagick when colors are unchanged |
+| **Unlock assets** | `.unlock-assets-hash` skips ~15 ImageMagick calls when bg/fg/accent match |
+| **Sync** | `cmp` before copy; skips client refresh entirely when no assets changed |
+| **Refresh** | Reloads only what changed (Waybar CSS, terminals, Hyprland, Qt, Nautilus) |
+| **Qt** | Skips `kbuildsycoca5` when installed files are identical; incremental rebuild during adapts |
+| **Nautilus** | Refresh updates icon/CSS only when different; skips restart when nothing changed |
 
-Omarchy opens **Nautilus** (Super+Shift+F), not Dolphin. Midnight Glass applies:
+During wallpaper adapts, staging sleeps are skipped (`MIDNIGHT_GLASS_ADAPTING=1`). For manual refreshes you can also set `MIDNIGHT_GLASS_FAST_REFRESH=1`.
 
-- **Icons** — picks a matching `Yaru-*-dark` icon theme from the wallpaper accent hue; updates live via gsettings when possible
-- **Layout** — large icon grid with size/type captions under each icon
-- **Glass styling** — dark sidebar, header, and view via `~/.config/gtk-4.0/gtk.css`; colors adapt from the wallpaper and reload when Nautilus is open
+---
 
-### Lock screen / Omarchy Unlocks menu
+## Waybar
 
-Omarchy’s **Unlocks** picker (Omarchy menu → Unlock) lists themes that have **`preview-unlock.png`**, not `unlock.png` alone. Midnight Glass generates both on every wallpaper adapt:
-
-- **`unlock-source.png`** — your master OMARCHY logo (edit this to change the shape)
-- **`unlock.png`** — Plymouth/SDDM logo, recolored to the adaptive accent
-- **`preview-unlock.png`** — 1920×1080 menu preview mockup (background + UI + logo)
-
-Apply a generated unlock to boot/login:
-
-```bash
-omarchy-plymouth-set-by-theme midnight-glass
-```
-
-Or pick **Midnight Glass** from the Omarchy Unlocks menu after running `./adapt-from-wallpaper.sh` once.
-
-### Check swap status
+- Layout: `waybar.config.jsonc` (generated from `waybar.position`)
+- Style: `waybar.css` with glass islands and 420ms color transitions
+- Reversible swap: `manage-waybar-config.sh` backs up your config to `waybar.config.user-backup.jsonc`
 
 ```bash
+./set-waybar-position.sh left    # or top | bottom | right
 ./manage-waybar-config.sh status
 ```
 
 ---
 
-## How it works
+## Nautilus (Omarchy file manager)
 
+- Icons: adaptive `Yaru-*-dark` from wallpaper hue (`icons.theme`)
+- Layout: large icon view via gsettings
+- Glass CSS: `nautilus/gtk.css` → `~/.config/gtk-4.0/gtk.css`
+
+```bash
+./apply-nautilus-theme.sh
+./manage-nautilus-config.sh status
 ```
-Wallpaper change
-      │
-      ▼
-adapt-from-wallpaper.sh ──► colors.toml, waybar.css, icons.theme, nautilus/gtk.css, hyprland.conf, terminals
-      │
-      ▼
-sync-theme-assets.sh ─────► omarchy/current/theme + refresh-theme-clients.sh
-      │
-      ├── refresh-theme-clients.sh ► waybar → terminals → Qt → Hyprland → Nautilus
-      └── apply-qt-theme.sh ──────► Kvantum + KDE color scheme (during adapt)
-```
-
-**On theme switch**, the `theme-set` hook activates or deactivates Midnight Glass swaps. When you pick another Omarchy theme, your original Waybar config and Qt settings are restored from backups stored inside this theme folder.
-
-**On login**, a post-boot hook re-applies the Waybar layout so workspace numbers are present from the start.
-
-**On wallpaper change**, the watcher re-adapts and runs **`refresh-theme-clients.sh`**, which updates open apps in stages (~80ms apart) so the palette shift feels smooth:
-
-1. **Waybar** — CSS cross-fade (~420ms) via SIGUSR2  
-2. **Terminals** — Alacritty / Kitty / Ghostty / Foot reload configs in place  
-3. **Qt apps** — Kvantum + KDE color scheme refresh  
-4. **Hyprland** — borders, blur, and opacity rules (`hyprctl reload`)  
-5. **Nautilus** — animated close/open when already running  
-
-Wallpaper image swaps are still handled by Omarchy’s `swaybg` (instant cut). Hyprland uses longer `matteOut` fade/layer/border animations from `hyprland.conf`.
 
 ---
 
-## What gets themed
+## Qt / Kvantum
 
-| Component | File(s) |
+Generated under `qt/MidnightGlass/` from `colors.toml`. Reversible via `manage-qt-theme.sh`.
+
+```bash
+./apply-qt-theme.sh              # build + activate
+./build-qt-theme.sh              # generate only
+```
+
+---
+
+## Lock screen / Unlocks menu
+
+Omarchy’s **Unlocks** picker requires **`preview-unlock.png`**. Generated alongside `unlock.png` from `unlock-source.png`:
+
+```bash
+./generate-unlock-assets.sh
+omarchy-plymouth-set-by-theme midnight-glass
+```
+
+---
+
+## Static assets (not wallpaper-adapted)
+
+These ship with the theme but are **not** rewritten by `adapt-from-wallpaper.sh`:
+
+- `btop.theme`, `neovim.lua`, `vscode.json`
+
+---
+
+## Deprecated shims
+
+- `apply-dolphin-theme.sh` → `apply-nautilus-theme.sh`
+- `apply-waybar-prefs.sh` → `set-waybar-position.sh`
+
+---
+
+## Switching away
+
+When you pick another Omarchy theme, the theme-set hook should run `deactivate-all` automatically (Waybar layout, Nautilus CSS/icons, Qt/Kvantum, wallpaper watcher).
+
+If remnants remain (left bar, glass Nautilus, old colors):
+
+```bash
+~/.config/omarchy/themes/midnight-glass/deactivate-all.sh
+```
+
+Then re-apply your current theme so Omarchy refreshes its own assets:
+
+```bash
+omarchy theme set "$(cat ~/.config/omarchy/current/theme.name)"
+```
+
+Re-install integration after theme updates so hooks use the correct paths:
+
+```bash
+~/.config/omarchy/themes/midnight-glass/install-integration.sh
+```
+
+---
+
+## Requirements
+
+| Dependency | Purpose |
 |---|---|
-| Hyprland | `hyprland.conf` |
-| Waybar layout | `waybar.config.jsonc` |
-| Waybar style | `waybar.css` |
-| Color palette | `colors.toml` |
-| Alacritty | `alacritty.toml` |
-| Kitty | `kitty.conf` |
-| Ghostty | `ghostty.conf` |
-| btop | `btop.theme` |
-| Neovim / LazyVim | `neovim.lua` |
-| VS Code / Cursor | `vscode.json` |
-| Qt / Dolphin | `qt/MidnightGlass/` (generated via Kvantum) |
-| Icons | `icons.theme` |
-| Lock screen | `unlock.png` (generated), `preview-unlock.png` (menu preview), `unlock-source.png` (master logo) |
-
----
-
-## Project structure
-
-```
-midnight-glass/
-├── adapt-from-wallpaper.sh      # Extract palette and rewrite color tokens
-├── install-integration.sh       # Install hooks + systemd watcher
-├── sync-theme-assets.sh         # Push assets to omarchy/current/theme
-├── sync-waybar-layout.sh        # Activate theme Waybar config (layout changes)
-├── refresh-theme-clients.sh     # Staged smooth refresh for all open apps
-├── refresh-waybar-style.sh      # Waybar SIGUSR2 + CSS cross-fade
-├── refresh-nautilus-theme.sh    # Nautilus sync + animated restart
-├── run-in-graphical-session.sh  # hyprctl dispatch helper for background services
-├── nautilus/restart-for-theme-refresh.sh
-├── generate-unlock-assets.sh    # Build unlock.png + preview-unlock.png
-├── unlock-source.png            # Master logo (orange OMARCHY pixel art)
-├── manage-waybar-config.sh      # Reversible Waybar swap (activate/deactivate)
-├── manage-dolphin-config.sh     # Reversible Dolphin layout + icon swap
-├── apply-dolphin-theme.sh       # Apply Dolphin layout and icons
-├── set-waybar-position.sh       # Switch bar edge + regenerate layout
-├── apply-qt-theme.sh            # Build and activate Kvantum/KDE colors
-├── manage-qt-theme.sh           # Reversible Qt swap (activate/deactivate)
-├── midnight-glass-background-watch
-├── hooks/                       # Source hooks (installed by install-integration.sh)
-├── backgrounds/                 # Bundled wallpapers
-├── dolphin/                     # Dolphin layout + icon backups
-├── icons.theme                  # KDE/GNOME icon theme name while active
-├── qt/MidnightGlass/            # Generated Qt/Kvantum theme files
-├── hyprland.conf
-├── waybar.config.jsonc
-├── waybar.css
-├── waybar.position
-└── colors.toml
-```
-
----
-
-## Switching away from Midnight Glass
-
-```bash
-omarchy theme set "<another theme>"
-```
-
-The theme-set hook automatically:
-
-- Restores your original `~/.config/waybar/config.jsonc` from `waybar.config.user-backup.jsonc`
-- Falls back to `waybar.config.omarchy-default.jsonc` if the backup is missing or looks like a Midnight Glass layout
-- Restores Dolphin layout from `dolphin/dolphinrc.user-backup` (or removes the layout file if Dolphin was never configured before)
-- Restores KDE/GNOME icon theme from theme-local backup, or Omarchy default `Yaru-blue`
-- Restores Kvantum and KDE color settings from theme-local backups
-- Deactivates the Midnight Glass layout and Qt swaps
-
-To stop the wallpaper watcher:
-
-```bash
-systemctl --user disable --now midnight-glass-background-watch.service
-```
-
----
-
-## Non-destructive design
-
-Midnight Glass is built to stay out of your way:
-
-- Waybar and Qt backups live **inside this theme folder**, not scattered across `~/.config`
-- Only configs that differ from Midnight Glass are backed up (never a left/right dock layout)
-- Theme switch restores the top-bar Omarchy default when the backup is invalid
-- Theme assets sync with `sync-theme-assets.sh` instead of `omarchy theme refresh`, avoiding unrelated config resets
-- Glass Hyprland rules ship with the theme so other Omarchy themes remain untouched when switching
-- Only color tokens are rewritten during adaptation — layout and glass structure stay intact
-
----
-
-## Troubleshooting
-
-**Colors did not update after a wallpaper change**
-
-```bash
-systemctl --user status midnight-glass-background-watch.service
-./adapt-from-wallpaper.sh
-./sync-theme-assets.sh
-```
-
-**Waybar layout looks wrong after login**
-
-```bash
-./sync-waybar-layout.sh
-```
-
-**Qt apps / Dolphin still use old colors**
-
-```bash
-./apply-qt-theme.sh
-```
-
-Ensure Kvantum is installed and `KvArcDark` is available at `/usr/share/Kvantum/KvArcDark/`.
-
-**ImageMagick missing**
-
-Install ImageMagick so `magick` or `convert` is on your `PATH`.
-
----
-
-## Credits
-
-Created by [@MASH2RAFI](https://github.com/MASH2RAFI) for [Omarchy](https://github.com/basecamp/omarchy) on Hyprland.
+| Omarchy + Hyprland | Theme system, compositor |
+| ImageMagick | Palette extraction, unlock assets |
+| Python 3 | Color math, gsettings, Qt generation |
+| Kvantum | Qt app theming |
+| systemd (user) | Wallpaper watcher |

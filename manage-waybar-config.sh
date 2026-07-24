@@ -1,28 +1,19 @@
 #!/bin/bash
 # Reversible Midnight Glass waybar layout swap.
-#
-# All swap state lives in this theme folder only. While Midnight Glass is
-# active, ~/.config/waybar/config.jsonc is replaced with waybar.config.jsonc
-# from here. Your original config is backed up once and restored when you
-# switch to another theme. If the backup is missing or invalid (e.g. a prior
-# left-bar layout), waybar.config.omarchy-default.jsonc is used instead.
-#
-#   ./manage-waybar-config.sh activate
-#   ./manage-waybar-config.sh deactivate
-#   ./manage-waybar-config.sh status
-#   ./manage-waybar-config.sh validate [config-path]
 
 set -euo pipefail
 
-THEME_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/omarchy/themes/midnight-glass"
-USER_CONFIG="${XDG_CONFIG_HOME:-$HOME/.config}/waybar/config.jsonc"
+MG_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=lib/common.sh
+source "$MG_ROOT/lib/common.sh"
+
+USER_CONFIG="$MG_CONFIG/waybar/config.jsonc"
 THEME_CONFIG="$THEME_DIR/waybar.config.jsonc"
 BACKUP="$THEME_DIR/waybar.config.user-backup.jsonc"
 OMARCHY_DEFAULT="$THEME_DIR/waybar.config.omarchy-default.jsonc"
 MARKER="$THEME_DIR/.waybar-swap-active"
-
-LEGACY_BACKUP="${XDG_CONFIG_HOME:-$HOME/.config}/waybar/config.jsonc.before-midnight-glass"
-LEGACY_MARKER="${XDG_CONFIG_HOME:-$HOME/.config}/waybar/.midnight-glass-active"
+LEGACY_BACKUP="$MG_CONFIG/waybar/config.jsonc.before-midnight-glass"
+LEGACY_MARKER="$MG_CONFIG/waybar/.midnight-glass-active"
 
 is_theme_layout() {
   python3 - "$1" "$THEME_CONFIG" <<'PY'
@@ -84,17 +75,6 @@ migrate_legacy_state() {
   rm -f "$LEGACY_BACKUP" "$LEGACY_MARKER"
 }
 
-restart_waybar() {
-  if command -v omarchy-restart-waybar >/dev/null; then
-    omarchy-restart-waybar
-  elif command -v omarchy >/dev/null; then
-    omarchy restart waybar
-  elif pgrep -x waybar >/dev/null; then
-    pkill -x waybar 2>/dev/null || true
-    setsid uwsm-app -- waybar >/dev/null 2>&1 &
-  fi
-}
-
 restore_target() {
   migrate_legacy_state
 
@@ -139,23 +119,20 @@ activate() {
 
   cp "$THEME_CONFIG" "$USER_CONFIG"
   validate_layout "$USER_CONFIG"
-  restart_waybar
+  mg_restart_waybar_layout
   echo "Applied Midnight Glass waybar layout"
 }
 
 deactivate() {
   migrate_legacy_state
-
-  if [[ ! -f $MARKER ]]; then
-    return 0
-  fi
+  [[ -f $MARKER ]] || return 0
 
   if target=$(restore_target); then
     cp -a "$target" "$USER_CONFIG"
   fi
 
   rm -f "$MARKER"
-  restart_waybar
+  mg_restart_waybar_layout
   echo "Restored waybar config for non-Midnight-Glass theme"
 }
 
@@ -163,8 +140,8 @@ status() {
   migrate_legacy_state
   if [[ -f $MARKER ]]; then
     echo "active"
-    echo "  theme config:   $THEME_CONFIG"
-    echo "  user backup:    $BACKUP"
+    echo "  theme config:    $THEME_CONFIG"
+    echo "  user backup:     $BACKUP"
     echo "  omarchy default: $OMARCHY_DEFAULT"
     if [[ -f $BACKUP ]] && is_theme_layout "$BACKUP"; then
       echo "  note: backup looks like Midnight Glass; restore will use omarchy default"

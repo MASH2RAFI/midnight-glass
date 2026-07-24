@@ -14,10 +14,12 @@
 
 set -euo pipefail
 
-THEME_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/omarchy/themes/midnight-glass"
+MG_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=lib/common.sh
+source "$MG_ROOT/lib/common.sh"
+
 POS_FILE="$THEME_DIR/waybar.position"
 THEME_CONFIG="$THEME_DIR/waybar.config.jsonc"
-CURRENT_THEME_NAME="${XDG_CONFIG_HOME:-$HOME/.config}/omarchy/current/theme.name"
 
 if [[ -n ${1:-} ]]; then
   POS=$(echo "$1" | tr '[:upper:]' '[:lower:]')
@@ -320,18 +322,12 @@ if "clock" not in config["modules-center"]:
 print(f"Wrote {out} (position={pos})")
 PY
 
-CURRENT_THEME=""
-[[ -f $CURRENT_THEME_NAME ]] && CURRENT_THEME=$(tr '[:upper:]' '[:lower:]' <"$CURRENT_THEME_NAME")
-
-if [[ $CURRENT_THEME == "midnight-glass" ]]; then
+if mg_is_active; then
   ACTIVATE_OUT=$("$THEME_DIR/manage-waybar-config.sh" activate 2>&1) || true
   printf '%s\n' "$ACTIVATE_OUT"
 
-  # activate restarts waybar when the layout file changed; otherwise reload CSS only.
-  if [[ $ACTIVATE_OUT == *"Applied Midnight Glass waybar layout"* ]]; then
-    :
-  else
-    "$THEME_DIR/refresh-waybar-style.sh" >/dev/null 2>&1 || true
+  if [[ $ACTIVATE_OUT != *"Applied Midnight Glass waybar layout"* ]]; then
+    mg_reload_waybar_style >/dev/null 2>&1 || true
   fi
 fi
 

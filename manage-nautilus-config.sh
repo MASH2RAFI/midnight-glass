@@ -1,90 +1,33 @@
 #!/bin/bash
-# Reversible Nautilus (Omarchy file manager) layout, icons, and GTK styling.
-#
-#   ./manage-nautilus-config.sh activate
-#   ./manage-nautilus-config.sh deactivate
-#   ./manage-nautilus-config.sh status
+# Reversible Nautilus layout, icons, and GTK styling for Midnight Glass.
 
 set -euo pipefail
 
-THEME_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/omarchy/themes/midnight-glass"
+MG_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=lib/common.sh
+source "$MG_ROOT/lib/common.sh"
+
 ICON_THEME_FILE="$THEME_DIR/icons.theme"
 THEME_GTK_CSS="$THEME_DIR/nautilus/gtk.css"
-USER_GTK_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/gtk-4.0"
+USER_GTK_DIR="$MG_CONFIG/gtk-4.0"
 USER_GTK_CSS="$USER_GTK_DIR/gtk.css"
 GTK_BACKUP="$THEME_DIR/nautilus/gtk.css.user-backup"
 NO_PRIOR_GTK="$THEME_DIR/nautilus/.no-prior-gtk-css"
 GSETTINGS_BACKUP="$THEME_DIR/nautilus/gsettings.user-backup"
 GSETTINGS_DEFAULT="$THEME_DIR/nautilus/gsettings.omarchy-default"
 MARKER="$THEME_DIR/.nautilus-swap-active"
-
-read_icon_theme() {
-  tr -d '[:space:]' <"$1"
-}
+GSETTINGS_PY="$MG_SCRIPTS/nautilus_gsettings.py"
 
 apply_gsettings() {
-  python3 - "$THEME_DIR" "apply" <<'PY'
-import pathlib, subprocess, sys
-
-theme_dir = pathlib.Path(sys.argv[1])
-icon_theme = (theme_dir / "icons.theme").read_text().strip()
-
-prefs = {
-    ("org.gnome.desktop.interface", "icon-theme"): icon_theme,
-    ("org.gnome.nautilus.preferences", "default-folder-viewer"): "icon-view",
-    ("org.gnome.nautilus.preferences", "default-sort-order"): "name",
-    ("org.gnome.nautilus.preferences", "default-sort-in-reverse-order"): "false",
-    ("org.gnome.nautilus.icon-view", "default-zoom-level"): "large",
-    ("org.gnome.nautilus.icon-view", "captions"): "['size', 'type', 'none']",
-    ("org.gnome.nautilus.list-view", "use-tree-view"): "false",
-    ("org.gnome.nautilus.list-view", "default-visible-columns"): "['name', 'size', 'date_modified']",
-}
-
-for (schema, key), value in prefs.items():
-    subprocess.run(["gsettings", "set", schema, key, value], check=True)
-PY
+  python3 "$GSETTINGS_PY" apply "$THEME_DIR"
 }
 
 backup_gsettings() {
-  python3 - "$GSETTINGS_BACKUP" <<'PY'
-import pathlib, subprocess, sys
-
-out = pathlib.Path(sys.argv[1])
-keys = [
-    ("org.gnome.desktop.interface", "icon-theme"),
-    ("org.gnome.nautilus.preferences", "default-folder-viewer"),
-    ("org.gnome.nautilus.preferences", "default-sort-order"),
-    ("org.gnome.nautilus.preferences", "default-sort-in-reverse-order"),
-    ("org.gnome.nautilus.icon-view", "default-zoom-level"),
-    ("org.gnome.nautilus.icon-view", "captions"),
-    ("org.gnome.nautilus.list-view", "use-tree-view"),
-    ("org.gnome.nautilus.list-view", "default-visible-columns"),
-]
-
-lines = []
-for schema, key in keys:
-    value = subprocess.check_output(["gsettings", "get", schema, key], text=True).strip()
-    lines.append(f"{schema}\t{key}\t{value}")
-
-out.write_text("\n".join(lines) + "\n")
-PY
+  python3 "$GSETTINGS_PY" backup "$GSETTINGS_BACKUP"
 }
 
 restore_gsettings() {
-  local source=$1
-  python3 - "$source" <<'PY'
-import pathlib, subprocess, sys
-
-path = pathlib.Path(sys.argv[1])
-if not path.exists():
-    raise SystemExit(0)
-
-for line in path.read_text().splitlines():
-    if not line.strip():
-        continue
-    schema, key, value = line.split("\t", 2)
-    subprocess.run(["gsettings", "set", schema, key, value], check=True)
-PY
+  python3 "$GSETTINGS_PY" restore "$1"
 }
 
 activate_gtk_css() {
@@ -101,11 +44,20 @@ activate_gtk_css() {
   cp "$THEME_GTK_CSS" "$USER_GTK_CSS"
 }
 
+copy_gtk_css_if_changed() {
+  mkdir -p "$USER_GTK_DIR"
+  [[ -f $USER_GTK_CSS ]] && cmp -s "$THEME_GTK_CSS" "$USER_GTK_CSS" && return 1
+  cp "$THEME_GTK_CSS" "$USER_GTK_CSS"
+}
+
 deactivate_gtk_css() {
   if [[ -f $GTK_BACKUP ]]; then
     cp -a "$GTK_BACKUP" "$USER_GTK_CSS"
   elif [[ -f $NO_PRIOR_GTK ]]; then
     rm -f "$USER_GTK_CSS" "$NO_PRIOR_GTK"
+    rmdir "$USER_GTK_DIR" 2>/dev/null || true
+  else
+    rm -f "$USER_GTK_CSS"
     rmdir "$USER_GTK_DIR" 2>/dev/null || true
   fi
 }
@@ -121,10 +73,10 @@ activate() {
     exit 1
   fi
 
-  if [[ ! -f $MARKER ]]; then
+  [[ -f $MARKER ]] || {
     backup_gsettings
     : >"$MARKER"
-  fi
+  }
 
   apply_gsettings
   activate_gtk_css
@@ -132,23 +84,27 @@ activate() {
 }
 
 refresh() {
-  if [[ ! -f $MARKER ]]; then
-    return 0
-  fi
-
-  if [[ ! -f $ICON_THEME_FILE || ! -f $THEME_GTK_CSS ]]; then
+  [[ -f $MARKER ]] || return 0
+  [[ -f $ICON_THEME_FILE && -f $THEME_GTK_CSS ]] || {
     echo "Missing Nautilus theme files in $THEME_DIR/nautilus/" >&2
     exit 1
+  }
+
+  MG_NAUTILUS_CHANGED=0
+
+  if python3 "$GSETTINGS_PY" refresh-icons "$THEME_DIR"; then
+    MG_NAUTILUS_CHANGED=1
   fi
 
-  apply_gsettings
-  activate_gtk_css
+  if copy_gtk_css_if_changed; then
+    MG_NAUTILUS_CHANGED=1
+  fi
+
+  export MG_NAUTILUS_CHANGED
 }
 
 deactivate() {
-  if [[ ! -f $MARKER ]]; then
-    return 0
-  fi
+  [[ -f $MARKER ]] || return 0
 
   if [[ -f $GSETTINGS_BACKUP ]]; then
     restore_gsettings "$GSETTINGS_BACKUP"
@@ -164,7 +120,7 @@ deactivate() {
 status() {
   if [[ -f $MARKER ]]; then
     echo "active"
-    echo "  icons: $(read_icon_theme "$ICON_THEME_FILE")"
+    echo "  icons: $(mg_read_icon_theme "$ICON_THEME_FILE")"
     echo "  gtk:   $USER_GTK_CSS"
   else
     echo "inactive"
