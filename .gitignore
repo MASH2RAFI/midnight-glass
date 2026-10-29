@@ -1,0 +1,9 @@
+# Machine-specific state written by the theme's scripts
+.last-adapted-wallpaper
+.palette-hash
+.unlock-assets-hash
+.*-swap-active
+
+# Backups of your own configs, made by the reversible swaps
+*.user-backup
+*.user-backup.jsonc

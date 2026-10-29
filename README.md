@@ -1,14 +1,47 @@
-# Midnight Glass
+<h1 align="center">Midnight Glass</h1>
+
+<p align="center"><strong>A frosted-glass Omarchy theme that re-colors your whole desktop every time you change wallpaper.</strong></p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/Omarchy-theme-89b4fa?style=flat-square" alt="Omarchy theme" />
+  <img src="https://img.shields.io/badge/Hyprland-7aa2f7?style=flat-square&logo=hyprland&logoColor=white" alt="Hyprland" />
+  <img src="https://img.shields.io/badge/Waybar-islands-bb9af7?style=flat-square&logo=wayland&logoColor=white" alt="Waybar" />
+  <img src="https://img.shields.io/badge/Bash-4EAA25?style=flat-square&logo=gnu-bash&logoColor=white" alt="Bash" />
+  <img src="https://img.shields.io/badge/Python-3-3776AB?style=flat-square&logo=python&logoColor=white" alt="Python 3" />
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green?style=flat-square" alt="MIT license" /></a>
+</p>
 
 Wallpaper-adaptive Omarchy theme with frosted-glass Hyprland decoration, separated Waybar islands, and coordinated colors across terminals, Nautilus, and Qt apps.
 
-All automation is **non-destructive**: your original Waybar layout and app settings are backed up inside this theme folder and restored when you switch away.
+> [!TIP]
+> All automation is **non-destructive**: your original Waybar layout and app settings are backed up inside this theme folder and restored when you switch away.
 
----
+## Features
+
+- 🎨 **Wallpaper-driven palette**: a systemd path unit picks up every wallpaper change and regenerates colors, with no polling loop
+- 🪟 **Frosted-glass Hyprland** decoration and Waybar split into floating islands with smooth 420 ms color transitions
+- 🖥️ **Everything matches**: Alacritty, Kitty and Ghostty, Nautilus (icons and GTK CSS), Qt/Kvantum, btop, Neovim and VS Code
+- 🔒 **Lock screen** previews generated for Omarchy's Unlocks menu
+- ↩️ **Reversible swaps** for Waybar, Qt and Nautilus, with a one-command `deactivate-all.sh`
+- ⚡ **Cheap to run**: hashes skip any work when the colors didn't change
+- 🖼️ **Wallpapers included** in `backgrounds/`
+
+## Requirements
+
+| Dependency | Purpose |
+|---|---|
+| Omarchy + Hyprland | Theme system, compositor |
+| ImageMagick | Palette extraction, unlock assets |
+| Python 3 | Color math, gsettings, Qt generation |
+| Kvantum | Qt app theming |
+| systemd (user) | Wallpaper watcher |
 
 ## Quick start
 
+Clone the theme into Omarchy's themes folder, install the hooks once, then switch to it:
+
 ```bash
+git clone https://github.com/MASH2RAFI/midnight-glass.git ~/.config/omarchy/themes/midnight-glass
 cd ~/.config/omarchy/themes/midnight-glass
 ./install-integration.sh
 omarchy theme set "Midnight Glass"
@@ -141,7 +174,7 @@ These ship with the theme but are **not** rewritten by `adapt-from-wallpaper.sh`
 
 ---
 
-## Switching away
+## Switching away (uninstall)
 
 When you pick another Omarchy theme, the theme-set hook should run `deactivate-all` automatically (Waybar layout, Nautilus CSS/icons, Qt/Kvantum, wallpaper watcher).
 
@@ -165,12 +198,6 @@ Re-install integration after theme updates so hooks use the correct paths:
 
 ---
 
-## Requirements
+## License
 
-| Dependency | Purpose |
-|---|---|
-| Omarchy + Hyprland | Theme system, compositor |
-| ImageMagick | Palette extraction, unlock assets |
-| Python 3 | Color math, gsettings, Qt generation |
-| Kvantum | Qt app theming |
-| systemd (user) | Wallpaper watcher |
+[MIT](LICENSE) © 2026 MASH2RAFI
